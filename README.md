@@ -41,20 +41,20 @@ Deploy a Java Spring Boot React app and a .NET app to Azure App Service using Gi
 
 ### Step 3: Configure Azure Resources
 
-- Create a Resource Group for the Project:
+- **Create a Resource Group for the Project:**
 
   ``az group create --name app-service-deployment --location eastus``
 
-- Create Azure Container Registry (ACR):
+- **Create Azure Container Registry (ACR):**
 
   ``az acr create --resource-group app-service-deployment --name <your-acr-name> --sku Basic``
   
-- Enable Admin Access on ACR:
+- **Enable Admin Access on ACR:**
   
   ``az acr update --name <your-acr-name> --admin-enabled true``
   
 
-- Set Up Azure App Service Plans:
+- **Set Up Azure App Service Plans:**
   - Backend: backend-plan
   -  Frontend: frontend-plan
   -  .NET App: dotnet-plan
