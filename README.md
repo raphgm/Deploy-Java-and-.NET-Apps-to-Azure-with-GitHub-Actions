@@ -74,18 +74,27 @@ Deploy a Java Spring Boot React app and a .NET app to Azure App Service using Gi
 - **Set Up Azure App Services:** Create App Services for all components:
   - Spring Boot Backend:
     
-    ``az webapp create --resource-group app-service-deployment --plan backend-plan --name backend-app --deployment-container-image-name <your-acr- 
-   name>.azurecr.io/backend:latest``
+    ``az webapp create --resource-group app-service-deployment \
+  --plan backend-plan \
+  --name backend-app \
+  --deployment-container-image-name myacr1234.azurecr.io/backend:latest
+``
 
   - React Frontend:
 
-    ``az webapp create --resource-group app-service-deployment --plan frontend-plan --name frontend-app --deployment-container-image-name <your-acr- 
-  name>.azurecr.io/frontend:latest``
+    ``az webapp create --resource-group app-service-deployment \
+  --plan frontend-plan \
+  --name frontend-app \
+  --deployment-container-image-name myacr1234.azurecr.io/frontend:latest
+``
 
   - .NET Application:
     
-     ``az webapp create --resource-group app-service-deployment --plan dotnet-plan --name dotnet-app --deployment-container-image-name <your-acr- 
-   name>.azurecr.io/dotnet-app:latest``
+     ``az webapp create --resource-group app-service-deployment \
+  --plan dotnet-plan \
+  --name dotnet-app \
+  --deployment-container-image-name myacr1234.azurecr.io/dotnet-app:latest
+``
 
 - **Set Up Azure SQL Database:**
   - Create the SQL Server and Database:
