@@ -36,7 +36,9 @@ Deploy a Java Spring Boot React app and a .NET app to Azure App Service using Gi
     ``git remote add origin https://github.com/raphgm/dotnet-app-example.git``
 
     ``git branch -M main``
+  
     ``git push -u origin main``
+  
   
 
 
