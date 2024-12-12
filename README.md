@@ -256,7 +256,192 @@ jobs:
           docker push <your-acr-name>.azurecr.io/dotnet-app:latest   
  ```
 
-### Alternative deployment method for automating all Azure resources in the task
+### Alternative deployment method for automating all Azure resources in the task with Azure Bicep.
+```yaml
+// Parameters
+param location string = 'northeurope'
+param resourceGroupName string = 'app-service-deployment'
+param appServicePlanSku string = 'B1'
+param backendAppName string = 'java-backend-app'
+param frontendAppName string = 'react-frontend-app'
+param dotnetAppName string = 'dotnet-web-app'
+param sqlServerName string = 'sqlserver1234'
+param sqlDatabaseName string = 'appdb'
+param sqlAdminUsername string = 'sqladminuser'
+@secure()
+param sqlAdminPassword string = 'P@ssw0rd1234'
+param acrName string = 'myacr1234'
+
+// Resource Group
+resource resourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
+  name: resourceGroupName
+  location: location
+}
+
+// Azure Container Registry
+resource acr 'Microsoft.ContainerRegistry/registries@2023-01-01-preview' = {
+  name: acrName
+  location: location
+  sku: {
+    name: 'Basic'
+  }
+  properties: {
+    adminUserEnabled: true
+  }
+}
+
+// App Service Plan
+resource appServicePlan 'Microsoft.Web/serverfarms@2022-09-01' = {
+  name: 'appServicePlan'
+  location: location
+  sku: {
+    name: appServicePlanSku
+    tier: 'Basic'
+  }
+}
+
+// Backend App Service
+resource backendApp 'Microsoft.Web/sites@2022-09-01' = {
+  name: backendAppName
+  location: location
+  properties: {
+    serverFarmId: appServicePlan.id
+    siteConfig: {
+      appSettings: [
+        {
+          name: 'DOCKER_REGISTRY_SERVER_URL'
+          value: 'https://${acrName}.azurecr.io'
+        }
+        {
+          name: 'DOCKER_REGISTRY_SERVER_USERNAME'
+          value: acr.properties.adminUserEnabled ? acr.listCredentials().username : ''
+        }
+        {
+          name: 'DOCKER_REGISTRY_SERVER_PASSWORD'
+          value: acr.properties.adminUserEnabled ? acr.listCredentials().passwords[0].value : ''
+        }
+        {
+          name: 'DATABASE_URL'
+          value: 'jdbc:sqlserver://${sqlServerName}.database.windows.net:1433;database=${sqlDatabaseName}'
+        }
+        {
+          name: 'DATABASE_USERNAME'
+          value: sqlAdminUsername
+        }
+        {
+          name: 'DATABASE_PASSWORD'
+          value: sqlAdminPassword
+        }
+      ]
+      linuxFxVersion: 'DOCKER|${acrName}.azurecr.io/backend:latest'
+    }
+  }
+}
+
+// Frontend App Service
+resource frontendApp 'Microsoft.Web/sites@2022-09-01' = {
+  name: frontendAppName
+  location: location
+  properties: {
+    serverFarmId: appServicePlan.id
+    siteConfig: {
+      appSettings: [
+        {
+          name: 'DOCKER_REGISTRY_SERVER_URL'
+          value: 'https://${acrName}.azurecr.io'
+        }
+        {
+          name: 'DOCKER_REGISTRY_SERVER_USERNAME'
+          value: acr.properties.adminUserEnabled ? acr.listCredentials().username : ''
+        }
+        {
+          name: 'DOCKER_REGISTRY_SERVER_PASSWORD'
+          value: acr.properties.adminUserEnabled ? acr.listCredentials().passwords[0].value : ''
+        }
+      ]
+      linuxFxVersion: 'DOCKER|${acrName}.azurecr.io/frontend:latest'
+    }
+  }
+}
+
+// .NET App Service
+resource dotnetApp 'Microsoft.Web/sites@2022-09-01' = {
+  name: dotnetAppName
+  location: location
+  properties: {
+    serverFarmId: appServicePlan.id
+    siteConfig: {
+      appSettings: [
+        {
+          name: 'DOCKER_REGISTRY_SERVER_URL'
+          value: 'https://${acrName}.azurecr.io'
+        }
+        {
+          name: 'DOCKER_REGISTRY_SERVER_USERNAME'
+          value: acr.properties.adminUserEnabled ? acr.listCredentials().username : ''
+        }
+        {
+          name: 'DOCKER_REGISTRY_SERVER_PASSWORD'
+          value: acr.properties.adminUserEnabled ? acr.listCredentials().passwords[0].value : ''
+        }
+      ]
+      linuxFxVersion: 'DOCKER|${acrName}.azurecr.io/dotnet-app:latest'
+    }
+  }
+}
+
+// SQL Server
+resource sqlServer 'Microsoft.Sql/servers@2022-02-01-preview' = {
+  name: sqlServerName
+  location: location
+  properties: {
+    administratorLogin: sqlAdminUsername
+    administratorLoginPassword: sqlAdminPassword
+  }
+}
+
+// SQL Database
+resource sqlDatabase 'Microsoft.Sql/servers/databases@2022-02-01-preview' = {
+  name: sqlDatabaseName
+  parent: sqlServer
+  properties: {
+    edition: 'Basic'
+    maxSizeBytes: 2147483648
+  }
+}
+
+// Firewall Rule for SQL Server
+resource sqlFirewallRule 'Microsoft.Sql/servers/firewallRules@2022-02-01-preview' = {
+  name: 'AllowAzureServices'
+  parent: sqlServer
+  properties: {
+    startIpAddress: '0.0.0.0'
+    endIpAddress: '0.0.0.0'
+  }
+}
+
+// Azure Monitor Log Analytics Workspace
+resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2021-06-01' = {
+  name: 'app-monitoring-law'
+  location: location
+  properties: {
+    sku: {
+      name: 'PerGB2018'
+    }
+  }
+}
+
+// Application Insights
+resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
+  name: 'app-insights'
+  location: location
+  properties: {
+    Application_Type: 'web'
+    WorkspaceResourceId: logAnalytics.id
+  }
+}
+
+```
 
 
   
