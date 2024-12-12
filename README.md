@@ -49,11 +49,11 @@ Deploy a Java Spring Boot React app and a .NET app to Azure App Service using Gi
 
 - **Create Azure Container Registry (ACR):**
 
-  ``az acr create --resource-group app-service-deployment --name <your-acr-name> --sku Basic``
+  ``az acr create --resource-group app-service-deployment --name myacr1234 --sku Basic``
   
 - **Enable Admin Access on ACR:**
   
-  ``az acr update --name <your-acr-name> --admin-enabled true``
+  ``az acr update --name myacr1234 --admin-enabled true``
   
 
 - **Set Up Azure App Service Plans:**
@@ -306,8 +306,8 @@ ENTRYPOINT ["dotnet", "YourApp.dll"]
 - Build and push Dockerfile:
   
  ```bash
-docker build -t <your-acr-name>.azurecr.io/dotnet-app:latest.
-docker push <your-acr-name>.azurecr.io/dotnet-app:latest
+docker build -t myacr1234.azurecr.io/dotnet-app:latest.
+docker push myacr1234.azurecr.io/dotnet-app:latest
 
 ```
 
