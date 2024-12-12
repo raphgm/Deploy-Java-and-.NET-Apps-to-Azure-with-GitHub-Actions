@@ -256,7 +256,7 @@ jobs:
           docker push <your-acr-name>.azurecr.io/dotnet-app:latest   
  ```
 
-
+### Alternative deployment method for automating all Azure resources in the task
 
 
   
