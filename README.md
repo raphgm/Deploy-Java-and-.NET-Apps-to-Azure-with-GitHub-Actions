@@ -10,11 +10,13 @@ Deploy a Java Spring Boot React app and a .NET app to Azure App Service using Gi
 ``git clone https://gitlab.com/blue-harvest-assignments/cloud-assignment.git
   ``
 ### Step 2: Push the repositories to GitHub:
-- Create two separate GitHub repositories:
 
-  ``spring-boot-react-example``
+- Created two separate GitHub repositories:
+
+  ``https://github.com/raphgm/spring-boot-react-example``
   
-  ``dotnet-app-example``
+  ``https://github.com/raphgm/dotnet-app-example``
+  
 - Push the cloned repositories to their respective GitHub repositories:
 
   - Spring Boot React Application:
