@@ -98,9 +98,9 @@ Deploy a Java Spring Boot React app and a .NET app to Azure App Service using Gi
 - **Set Up Azure SQL Database:**
   - Create the SQL Server and Database:
 
-    ``az sql server create --name <server-name> --resource-group app-service-deployment --admin-user <username> --admin-password <password>``
+    ``az sql server create --name sqlserver1234 --resource-group app-service-deployment --admin-user <username> --admin-password <password>``
     
-     ``az sql db create --name <database-name> --server <server-name> --resource-group app-service-deployment --service-objective S0``
+     ``az sql db create --name appdb --server sqlserver1234 --resource-group app-service-deployment --service-objective S0``
     
 - **Allow Azure App Services to Connect to SQL Server:**
 
@@ -334,8 +334,6 @@ docker push myacr1234.azurecr.io/dotnet-app:latest
 - Backend Workflow (.github/workflows/backend.yml):
   
 ```yaml
-name: Backend CI/CD
-
 name: Backend CI/CD
 
 on:
