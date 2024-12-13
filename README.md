@@ -367,8 +367,8 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
-          docker build -t <your-acr-name>.azurecr.io/backend:latest ./backend
-          docker push <your-acr-name>.azurecr.io/backend:latest
+          docker build -t myacr1234.azurecr.io/backend:latest ./backend
+          docker push myacr1234.azurecr.io/backend:latest
 ```
 
 
