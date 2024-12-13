@@ -104,20 +104,20 @@ Deploy a Java Spring Boot React app and a .NET app to Azure App Service using Gi
 
    ``az sql server firewall-rule create --resource-group app-service-deployment --server <server-name> --name AllowAzureServices --start-ip-address 0.0.0.0 --end-ip-address 0.0.0.0``
 
-  Create a Key Vault to Store all Sensitive keys for the deployment
-az keyvault create --name deploymentkeyvault --resource-group app-service-deployment --location northeurope
+  ## Create a Key Vault to Store all Sensitive keys for the deployment
+``az keyvault create --name deploymentkeyvault --resource-group app-service-deployment --location northeurope``
 
-Store SQL Server Credentials in Key Vault:
+## Store SQL Server Credentials in Key Vault:
 
-az keyvault secret set \ --vault-name deploymentkeyvault \ --name "S<qlUsername>" \ --value "<username value'" 
+``az keyvault secret set \ --vault-name deploymentkeyvault \ --name "S<qlUsername>" \ --value "<username value"``
 
-Store SQL Password:
+**Store SQL Password:**
 
-az keyvault secret set \ --vault-name deploymentkeyvault \ --name "<SqlPassword>" \ --value "<password value>"
+``az keyvault secret set \ --vault-name deploymentkeyvault \ --name "<SqlPassword>" \ --value "<password value>"``
 
-Store SQL Database Credentials in Key Vault:
+**Store SQL Database Credentials in Key Vault:**
 
-az keyvault secret set \ --vault-name deploymentkeyvault \ --name "<Sqlusername>" \ --value "<username value>" 
+``az keyvault secret set \ --vault-name deploymentkeyvault \ --name "<Sqlusername>" \ --value "<username value>"`` 
 
 
 
@@ -369,37 +369,7 @@ resource monitoringSolution 'Microsoft.OperationsManagement/solutions@2015-11-01
 
 
 ```
-### Create a Key Vault to Store all Sensitive keys for the deployment
 
-``az keyvault create --name deploymentkeyvault --resource-group app-service-deployment --location northeurope``  
-
-- **Store SQL Server Credentials in Key Vault:**
-  
-  ``az keyvault secret set \
-  --vault-name deploymentkeyvault \
-  --name "SqlUsername" \
-  --value "sqlserver1234'"
-  ``
-  
-- **Store SQL Password:**
-  
-  ``
-  az keyvault secret set \
-  --vault-name deploymentkeyvault \
-  --name "SqlPassword" \
-  --value "P@ssw0rd1234"
-  ``
-  
-- **Store SQL Database  Credentials in Key Vault:**
-    
-    ``az keyvault secret set \
-  --vault-name deploymentkeyvault \
-  --name "SqladminUsername" \
-  --value "sqladminuser"
-  ``
-
-### Create a Service principal that will be used for the deployment  
-<!-- Create a service principal with the name dsvp and scope it to the app-service-deployment resource group -->
 
 
 
