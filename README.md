@@ -115,15 +115,60 @@ param frontendAppName string = 'react-frontend-app'
 param dotnetAppName string = 'dotnet-web-app'
 param sqlServerName string = 'sqlserver1234'
 param sqlDatabaseName string = 'appdb'
-param sqlAdminUsername string = 'sqladminuser'
-@secure()
-param sqlAdminPassword string = 'P@ssw0rd1234'
 param acrName string = 'myacr1234'
+param keyVaultName string = 'deploymentkeyvault'
+param logAnalyticsWorkspaceName string = 'app-monitoring-law'
+param applicationInsightsName string = 'app-insights'
+param monitoringSolutionName string = 'MonitoringSolution'
+param solutionType string = 'ContainerInsights'
+@secure()
+param sqlAdminPassword string
+@secure()
+param sqlAdminUsername string
 
 // Resource Group
 resource resourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
   name: resourceGroupName
   location: location
+}
+
+// Azure Key Vault
+resource keyVault 'Microsoft.KeyVault/vaults@2023-02-01' = {
+  name: keyVaultName
+  location: location
+  properties: {
+    tenantId: subscription().tenantId
+    sku: {
+      family: 'A'
+      name: 'standard'
+    }
+    accessPolicies: [
+      {
+        tenantId: subscription().tenantId
+        objectId: subscription().subscriptionId
+        permissions: {
+          secrets: [ 'get', 'set' ]
+        }
+      }
+    ]
+  }
+}
+
+// Store SQL credentials in Key Vault
+resource sqlAdminUsernameSecret 'Microsoft.KeyVault/vaults/secrets@2021-06-01-preview' = {
+  name: '${keyVaultName}/sqlAdminUsername'
+  properties: {
+    value: sqlAdminUsername
+  }
+  dependsOn: [keyVault]
+}
+
+resource sqlAdminPasswordSecret 'Microsoft.KeyVault/vaults/secrets@2021-06-01-preview' = {
+  name: '${keyVaultName}/sqlAdminPassword'
+  properties: {
+    value: sqlAdminPassword
+  }
+  dependsOn: [keyVault]
 }
 
 // Azure Container Registry
@@ -174,11 +219,11 @@ resource backendApp 'Microsoft.Web/sites@2022-09-01' = {
         }
         {
           name: 'DATABASE_USERNAME'
-          value: sqlAdminUsername
+          value: '@Microsoft.KeyVault(SecretUri=https://${keyVaultName}.vault.azure.net/secrets/sqlAdminUsername)'
         }
         {
           name: 'DATABASE_PASSWORD'
-          value: sqlAdminPassword
+          value: '@Microsoft.KeyVault(SecretUri=https://${keyVaultName}.vault.azure.net/secrets/sqlAdminPassword)'
         }
       ]
       linuxFxVersion: 'DOCKER|${acrName}.azurecr.io/backend:latest'
@@ -270,7 +315,7 @@ resource sqlFirewallRule 'Microsoft.Sql/servers/firewallRules@2022-02-01-preview
 
 // Azure Monitor Log Analytics Workspace
 resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2021-06-01' = {
-  name: 'app-monitoring-law'
+  name: logAnalyticsWorkspaceName
   location: location
   properties: {
     sku: {
@@ -281,13 +326,30 @@ resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2021-06-01' = {
 
 // Application Insights
 resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
-  name: 'app-insights'
+  name: applicationInsightsName
   location: location
   properties: {
     Application_Type: 'web'
     WorkspaceResourceId: logAnalytics.id
   }
 }
+
+// Monitoring Solution
+resource monitoringSolution 'Microsoft.OperationsManagement/solutions@2015-11-01-preview' = {
+  name: '${monitoringSolutionName}(workspace-${logAnalytics.name})'
+  location: location
+  properties: {
+    workspaceResourceId: logAnalytics.id
+    solutionType: solutionType
+  }
+  plan: {
+    name: monitoringSolutionName
+    product: 'OMSGallery/ContainerInsights'
+    promotionCode: ''
+    publisher: 'Microsoft'
+  }
+}
+
 
 ```
 ### Create a Key Vault to Store all Sensitive keys for the deployment
@@ -311,7 +373,7 @@ resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
   --value "P@ssw0rd1234"
   ``
   
-  - **Store SQL Database  Credentials in Key Vault:**
+- **Store SQL Database  Credentials in Key Vault:**
     
     ``az keyvault secret set \
   --vault-name deploymentkeyvault \
@@ -320,6 +382,8 @@ resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
   ``
 
 ### Create a Service principal that will be used for the deployment  
+<!-- Create a service principal with the name dsvp and scope it to the app-service-deployment resource group -->
+
 
 
   ### Step 4: Create a Dockerfile for .NET application
