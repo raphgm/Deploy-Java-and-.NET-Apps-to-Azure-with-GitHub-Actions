@@ -30,13 +30,13 @@ Deploy a Java Spring Boot React app and a .NET app to Azure App Service using Gi
 
    - .NET Application:
 
-    ``cd cloud-assignment``
+     ``cd cloud-assignment``
    
-    ``git remote add origin https://github.com/raphgm/dotnet-app-example.git``
+     ``git remote add origin https://github.com/raphgm/dotnet-app-example.git``
 
-    ``git branch -M main``
+     ``git branch -M main``
   
-    ``git push -u origin main``
+     ``git push -u origin main``
   
   
 
