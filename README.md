@@ -40,8 +40,6 @@ Deploy a Java Spring Boot React app and a .NET app to Azure App Service using Gi
   
   
 
-
-
 ### Step 3: Configure Azure Resources
 
 - **Create a Resource Group for the Project:**
@@ -296,7 +294,7 @@ resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
 
 ``az keyvault create --name deploymentkeyvault --resource-group app-service-deployment --location northeurope``  
 
-- **Store SQL Server  Credentials in Key Vault:**
+- **Store SQL Server Credentials in Key Vault:**
   
   ``az keyvault secret set \
   --vault-name deploymentkeyvault \
