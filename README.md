@@ -501,8 +501,8 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
-          docker build -t <your-acr-name>.azurecr.io/frontend:latest ./frontend
-          docker push <your-acr-name>.azurecr.io/frontend:latest ```
+          docker build -t myacr1234.azurecr.io/frontend:latest ./frontend
+          docker push myacr1234.azurecr.io/frontend:latest 
 
 ```
  - NET Workflow (.github/workflows/dotnet.yml):
@@ -542,8 +542,8 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
-          docker build -t <your-acr-name>.azurecr.io/dotnet-app:latest .
-          docker push <your-acr-name>.azurecr.io/dotnet-app:latest   
+          docker build -t myacr1234.azurecr.io/dotnet-app:latest .
+          docker push myacr1234.azurecr.io/dotnet-app:latest   
  ```
 
 
