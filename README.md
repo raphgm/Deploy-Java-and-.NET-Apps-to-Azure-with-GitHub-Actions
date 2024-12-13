@@ -292,6 +292,33 @@ resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
 }
 
 ```
+### Create a Key Vault to Store all Sensitive keys for the deployment
+
+``az keyvault create --name deploymentkeyvault --resource-group app-service-deployment --location northeurope``  
+
+- **Store SQL Server  Credentials in Key Vault:**
+  
+  ``az keyvault secret set \
+  --vault-name deploymentkeyvault \
+  --name "SqlUsername" \
+  --value "sqlserver1234'"
+  ``
+  
+- **Store SQL Password:**
+  ``
+  az keyvault secret set \
+  --vault-name deploymentkeyvault \
+  --name "SqlPassword" \
+  --value "P@ssw0rd1234"
+  ``
+  - **Store SQL Database  Credentials in Key Vault:**
+    ``az keyvault secret set \
+  --vault-name deploymentkeyvault \
+  --name "SqladminUsername" \
+  --value "sqladminuser"
+  ``
+
+### Create a Service principal that will be used for the deployment
 
   ### Step 4: Create a Dockerfile for .NET application
 ```dockerfile
