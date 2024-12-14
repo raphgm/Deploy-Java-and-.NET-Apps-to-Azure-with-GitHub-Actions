@@ -125,24 +125,37 @@ Deploy a Java Spring Boot React app and a .NET app to Azure App Service using Gi
 ### Alternative deployment method for automating all Azure resources in the task with Azure Bicep.
 ```yaml
 // Parameters
-param location string = 'northeurope'
-param resourceGroupName string = 'app-service-deployment'
+param location string {
+  default: 'northeurope'
+  allowed: [
+    'eastus',
+    'westeurope',
+    'northeurope'
+  ]
+}
+param resourceGroupName string = '${environment}-resource-group'
+param environment string = 'dev' // Define environment
+param uniqueSuffix string = uniqueString(resourceGroup().id) // Generate unique suffix based on resource group
 param appServicePlanSku string = 'B1'
-param backendAppName string = 'java-backend-app'
-param frontendAppName string = 'react-frontend-app'
-param dotnetAppName string = 'dotnet-web-app'
-param sqlServerName string = 'sqlserver1234'
+param backendAppName string = '${environment}-java-backend-app-${uniqueSuffix}'
+param frontendAppName string = '${environment}-react-frontend-app-${uniqueSuffix}'
+param dotnetAppName string = '${environment}-dotnet-web-app-${uniqueSuffix}'
+param sqlServerName string = '${environment}-sqlserver-${uniqueSuffix}'
 param sqlDatabaseName string = 'appdb'
-param acrName string = 'myacr1234'
-param keyVaultName string = 'deploymentkeyvault'
-param logAnalyticsWorkspaceName string = 'app-monitoring-law'
-param applicationInsightsName string = 'app-insights'
+param acrName string = '${environment}-acr-${uniqueSuffix}'
+param keyVaultName string = '${environment}-keyvault-${uniqueSuffix}'
+param logAnalyticsWorkspaceName string = '${environment}-app-monitoring-law-${uniqueSuffix}'
+param applicationInsightsName string = '${environment}-app-insights-${uniqueSuffix}'
 param monitoringSolutionName string = 'MonitoringSolution'
 param solutionType string = 'ContainerInsights'
 @secure()
 param sqlAdminPassword string
 @secure()
 param sqlAdminUsername string
+@secure()
+param aadClientId string
+@secure()
+param aadClientSecret string
 
 // Resource Group
 resource resourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
@@ -203,7 +216,7 @@ resource acr 'Microsoft.ContainerRegistry/registries@2023-01-01-preview' = {
 
 // App Service Plan
 resource appServicePlan 'Microsoft.Web/serverfarms@2022-09-01' = {
-  name: 'appServicePlan'
+  name: '${environment}-appServicePlan-${uniqueSuffix}'
   location: location
   sku: {
     name: appServicePlanSku
@@ -217,7 +230,7 @@ resource appServicePlan 'Microsoft.Web/serverfarms@2022-09-01' = {
 
 // Auto-scaling rule
 resource autoScale 'Microsoft.Insights/autoscalesettings@2022-06-01' = {
-  name: 'cpu-memory-autoscale'
+  name: '${environment}-cpu-memory-autoscale-${uniqueSuffix}'
   location: location
   properties: {
     profiles: [
@@ -416,7 +429,7 @@ resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
 
 // Managed Grafana
 resource managedGrafana 'Microsoft.Dashboard/grafana@2022-08-01' = {
-  name: 'ManagedGrafana'
+  name: '${environment}-ManagedGrafana-${uniqueSuffix}'
   location: location
   properties: {
     zoneRedundant: false
@@ -429,7 +442,7 @@ resource managedGrafana 'Microsoft.Dashboard/grafana@2022-08-01' = {
 
 // Prometheus Collector in Log Analytics
 resource logAnalyticsPrometheus 'Microsoft.OperationalInsights/workspaces/linkedServices@2021-12-01-preview' = {
-  name: 'PrometheusCollector'
+  name: '${environment}-PrometheusCollector-${uniqueSuffix}'
   parent: logAnalytics
   properties: {
     linkedServiceResourceId: logAnalytics.id
@@ -439,7 +452,7 @@ resource logAnalyticsPrometheus 'Microsoft.OperationalInsights/workspaces/linked
 
 // Prometheus Monitoring Rule
 resource prometheusMetrics 'Microsoft.Insights/dataCollectionRules@2021-07-01-preview' = {
-  name: 'PrometheusMetricsRule'
+  name: '${environment}-PrometheusMetricsRule-${uniqueSuffix}'
   location: location
   properties: {
     dataSources: {
@@ -462,6 +475,31 @@ resource prometheusMetrics 'Microsoft.Insights/dataCollectionRules@2021-07-01-pr
   }
 }
 
+// Backend App Authentication Configuration
+resource backendAppAuth 'Microsoft.Web/sites/config@2022-09-01' = {
+  name: '${backendAppName}/authsettings'
+  properties: {
+    enabled: true
+    runtimeVersion: 'v2.0'
+    platform: {
+      enabled: true
+      runtimeVersion: 'v2.0'
+    }
+    authType: 'AAD'
+    identityProviders: {
+      azureActiveDirectory: {
+        enabled: true
+        registration: {
+          clientId: aadClientId
+          clientSecretSettingName: aadClientSecret
+        }
+        login: {
+          loginParameters: [ 'prompt=login' ]
+        }
+      }
+    }
+  }
+}
 
 ```
 
