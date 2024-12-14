@@ -208,6 +208,68 @@ resource appServicePlan 'Microsoft.Web/serverfarms@2022-09-01' = {
     name: appServicePlanSku
     tier: 'Basic'
   }
+  properties: {
+    maximumElasticWorkerCount: 10
+    elasticScaleEnabled: true
+  }
+}
+
+// Auto-scaling rule
+resource autoScale 'Microsoft.Insights/autoscalesettings@2022-06-01' = {
+  name: 'cpu-memory-autoscale'
+  location: location
+  properties: {
+    profiles: [
+      {
+        name: 'ScaleBasedOnCPUAndMemory'
+        capacity: {
+          minimum: '1'
+          maximum: '10'
+          default: '1'
+        }
+        rules: [
+          {
+            metricTrigger: {
+              metricName: 'Percentage CPU'
+              metricResourceUri: appServicePlan.id
+              timeGrain: 'PT1M'
+              statisticalFunction: 'Average'
+              timeWindow: 'PT5M'
+              timeAggregation: 'Average'
+              operator: 'GreaterThan'
+              threshold: 75
+            }
+            scaleAction: {
+              direction: 'Increase'
+              type: 'ChangeCount'
+              value: '1'
+              cooldown: 'PT5M'
+            }
+          }
+          {
+            metricTrigger: {
+              metricName: 'Memory Usage'
+              metricResourceUri: appServicePlan.id
+              timeGrain: 'PT1M'
+              statisticalFunction: 'Average'
+              timeWindow: 'PT5M'
+              timeAggregation: 'Average'
+              operator: 'GreaterThan'
+              threshold: 75
+            }
+            scaleAction: {
+              direction: 'Increase'
+              type: 'ChangeCount'
+              value: '1'
+              cooldown: 'PT5M'
+            }
+          }
+        ]
+      }
+    ]
+    enabled: true
+    notifications: []
+  }
 }
 
 // Backend App Service
@@ -351,19 +413,51 @@ resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
   }
 }
 
-// Monitoring Solution
-resource monitoringSolution 'Microsoft.OperationsManagement/solutions@2015-11-01-preview' = {
-  name: '${monitoringSolutionName}(workspace-${logAnalytics.name})'
+// Managed Grafana
+resource managedGrafana 'Microsoft.Dashboard/grafana@2022-08-01' = {
+  name: 'ManagedGrafana'
   location: location
   properties: {
-    workspaceResourceId: logAnalytics.id
-    solutionType: solutionType
+    zoneRedundant: false
+    publicNetworkAccess: 'Enabled'
   }
-  plan: {
-    name: monitoringSolutionName
-    product: 'OMSGallery/ContainerInsights'
-    promotionCode: ''
-    publisher: 'Microsoft'
+  identity: {
+    type: 'SystemAssigned'
+  }
+}
+
+// Prometheus Collector in Log Analytics
+resource logAnalyticsPrometheus 'Microsoft.OperationalInsights/workspaces/linkedServices@2021-12-01-preview' = {
+  name: 'PrometheusCollector'
+  parent: logAnalytics
+  properties: {
+    linkedServiceResourceId: logAnalytics.id
+    writeAccessResourceId: ''
+  }
+}
+
+// Prometheus Monitoring Rule
+resource prometheusMetrics 'Microsoft.Insights/dataCollectionRules@2021-07-01-preview' = {
+  name: 'PrometheusMetricsRule'
+  location: location
+  properties: {
+    dataSources: {
+      performanceCounters: []
+      logs: [
+        {
+          name: 'prometheusLogs'
+          streams: [ 'Microsoft-InsightsMetrics' ]
+        }
+      ]
+    }
+    destinations: {
+      logAnalytics: [
+        {
+          name: 'logAnalyticsDestination'
+          workspaceResourceId: logAnalytics.id
+        }
+      ]
+    }
   }
 }
 
