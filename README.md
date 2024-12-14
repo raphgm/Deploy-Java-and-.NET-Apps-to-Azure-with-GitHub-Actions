@@ -104,10 +104,10 @@ Deploy a Java Spring Boot React app and a .NET app to Azure App Service using Gi
 
    ``az sql server firewall-rule create --resource-group app-service-deployment --server <server-name> --name AllowAzureServices --start-ip-address 0.0.0.0 --end-ip-address 0.0.0.0``
 
-  ## Create a Key Vault to Store all Sensitive keys for the deployment
+**Create a Key Vault to Store all Sensitive keys for the deployment**
 ``az keyvault create --name deploymentkeyvault --resource-group app-service-deployment --location northeurope``
 
-## Store SQL Server Credentials in Key Vault:
+**Store SQL Server Credentials in Key Vault:**
 
 ``az keyvault secret set \ --vault-name deploymentkeyvault \ --name "S<qlUsername>" \ --value "<username value"``
 
