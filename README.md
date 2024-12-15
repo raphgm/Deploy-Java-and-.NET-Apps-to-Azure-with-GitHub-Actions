@@ -177,7 +177,7 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-02-01' = {
     accessPolicies: [
       {
         tenantId: tenantId
-        objectId: subscription().subscriptionId
+        objectId: '3b22ccd0-4a9a-458a-ba05-4349d7dac8fb' // Subscription ID for access
         permissions: {
           secrets: [ 'get', 'set' ]
         }
@@ -481,12 +481,13 @@ resource prometheusMetrics 'Microsoft.Insights/dataCollectionRules@2021-07-01-pr
       logs: [
         {
           name: 'prometheusLogs'
-         
-
+        }
+      ]
+    }
+  }
+}
 
 ```
-
-
 
 
   ### Step 4: Create a Dockerfile for .NET application
