@@ -153,9 +153,10 @@ param sqlAdminPassword string
 @secure()
 param sqlAdminUsername string
 @secure()
-param aadClientId string
+param aadClientId string = 'a57da629-6265-46f2-add3-b61e0181f9bb' // Application (client) ID
 @secure()
 param aadClientSecret string
+param tenantId string = '21cef452-6ccc-4171-9420-b34ecb234499' // Directory (tenant) ID
 
 // Resource Group
 resource resourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
@@ -168,14 +169,14 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-02-01' = {
   name: keyVaultName
   location: location
   properties: {
-    tenantId: subscription().tenantId
+    tenantId: tenantId
     sku: {
       family: 'A'
       name: 'standard'
     }
     accessPolicies: [
       {
-        tenantId: subscription().tenantId
+        tenantId: tenantId
         objectId: subscription().subscriptionId
         permissions: {
           secrets: [ 'get', 'set' ]
@@ -290,6 +291,9 @@ resource autoScale 'Microsoft.Insights/autoscalesettings@2022-06-01' = {
 resource backendApp 'Microsoft.Web/sites@2022-09-01' = {
   name: backendAppName
   location: location
+  identity: {
+    type: 'SystemAssigned'
+  }
   properties: {
     serverFarmId: appServicePlan.id
     siteConfig: {
@@ -322,6 +326,23 @@ resource backendApp 'Microsoft.Web/sites@2022-09-01' = {
       linuxFxVersion: 'DOCKER|${acrName}.azurecr.io/backend:latest'
     }
   }
+}
+
+// Key Vault Access Policy for Backend Managed Identity
+resource keyVaultAccessPolicy 'Microsoft.KeyVault/vaults/accessPolicies@2023-02-01' = {
+  name: '${keyVaultName}/add'
+  properties: {
+    accessPolicies: [
+      {
+        tenantId: tenantId
+        objectId: backendApp.identity.principalId
+        permissions: {
+          secrets: [ 'get', 'list' ]
+        }
+      }
+    ]
+  }
+  dependsOn: [keyVault, backendApp]
 }
 
 // Frontend App Service
@@ -460,46 +481,8 @@ resource prometheusMetrics 'Microsoft.Insights/dataCollectionRules@2021-07-01-pr
       logs: [
         {
           name: 'prometheusLogs'
-          streams: [ 'Microsoft-InsightsMetrics' ]
-        }
-      ]
-    }
-    destinations: {
-      logAnalytics: [
-        {
-          name: 'logAnalyticsDestination'
-          workspaceResourceId: logAnalytics.id
-        }
-      ]
-    }
-  }
-}
+         
 
-// Backend App Authentication Configuration
-resource backendAppAuth 'Microsoft.Web/sites/config@2022-09-01' = {
-  name: '${backendAppName}/authsettings'
-  properties: {
-    enabled: true
-    runtimeVersion: 'v2.0'
-    platform: {
-      enabled: true
-      runtimeVersion: 'v2.0'
-    }
-    authType: 'AAD'
-    identityProviders: {
-      azureActiveDirectory: {
-        enabled: true
-        registration: {
-          clientId: aadClientId
-          clientSecretSettingName: aadClientSecret
-        }
-        login: {
-          loginParameters: [ 'prompt=login' ]
-        }
-      }
-    }
-  }
-}
 
 ```
 
