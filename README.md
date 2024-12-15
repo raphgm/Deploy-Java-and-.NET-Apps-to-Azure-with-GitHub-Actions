@@ -123,19 +123,20 @@ Deploy a Java Spring Boot React app and a .NET app to Azure App Service using Gi
 
 
 ### Alternative deployment method for automating all Azure resources in the task with Azure Bicep.
-```yaml
+
+```bicep
 // Parameters
 param location string {
   default: 'northeurope'
   allowed: [
-    'eastus',
-    'westeurope',
+    'eastus'
+    'westeurope'
     'northeurope'
   ]
 }
-param resourceGroupName string = '${environment}-resource-group'
 param environment string = 'dev' // Define environment
 param uniqueSuffix string = uniqueString(resourceGroup().id) // Generate unique suffix based on resource group
+param resourceGroupName string = '${environment}-resource-group'
 param appServicePlanSku string = 'B1'
 param backendAppName string = '${environment}-java-backend-app-${uniqueSuffix}'
 param frontendAppName string = '${environment}-react-frontend-app-${uniqueSuffix}'
@@ -192,7 +193,9 @@ resource sqlAdminUsernameSecret 'Microsoft.KeyVault/vaults/secrets@2021-06-01-pr
   properties: {
     value: sqlAdminUsername
   }
-  dependsOn: [keyVault]
+  dependsOn: [
+    keyVault
+  ]
 }
 
 resource sqlAdminPasswordSecret 'Microsoft.KeyVault/vaults/secrets@2021-06-01-preview' = {
@@ -200,7 +203,9 @@ resource sqlAdminPasswordSecret 'Microsoft.KeyVault/vaults/secrets@2021-06-01-pr
   properties: {
     value: sqlAdminPassword
   }
-  dependsOn: [keyVault]
+  dependsOn: [
+    keyVault
+  ]
 }
 
 // Azure Container Registry
@@ -342,7 +347,10 @@ resource keyVaultAccessPolicy 'Microsoft.KeyVault/vaults/accessPolicies@2023-02-
       }
     ]
   }
-  dependsOn: [keyVault, backendApp]
+  dependsOn: [
+    keyVault
+    backendApp
+  ]
 }
 
 // Frontend App Service
@@ -489,6 +497,13 @@ resource prometheusMetrics 'Microsoft.Insights/dataCollectionRules@2021-07-01-pr
 
 ```
 
+## Deploy the Bicep file
+
+``az deployment group create \
+  --resource-group <resource-group-name> \
+  --template-file main.bicep \
+  --parameters environment=prod sqlAdminPassword=YourSecurePassword
+``
 
   ### Step 4: Create a Dockerfile for .NET application
 ```dockerfile
