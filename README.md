@@ -496,7 +496,10 @@ resource prometheusMetrics 'Microsoft.Insights/dataCollectionRules@2021-07-01-pr
 }
 
 ```
+## Service Principal
 
+``az ad sp create-for-rbac --name "terraform-sp" --role Contributor --scopes /subscriptions/3b22ccd0-4a9a-458a-ba05-4349d7dac8fb
+``
 ## Deploy the Bicep file
 
 ``az deployment group create \
