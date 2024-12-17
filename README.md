@@ -1,5 +1,30 @@
 # Deploy-Java-and-.NET-Apps-to-Azure-with-GitHub-Actions
 Deploy a Java Spring Boot React app and a .NET app to Azure App Service using GitHub Actions for CI/CD. Containerize apps with Docker, store images in Azure Container Registry, and connect the backend to Azure SQL Database. Create separate pipelines for the backend, frontend, and the .NET app.  
+
+## Project Structure
+
+project-root/
+│
+├── frontend/
+│   ├── Dockerfile
+│   ├── azure-pipelines.yml
+│   └── (React Source Code)
+│
+├── backend/
+│   ├── Dockerfile
+│   ├── azure-pipelines.yml
+│   └── (Java Spring Boot Source Code)
+│
+├── infrastructure/
+│   ├── main.tf
+│   ├── variables.tf
+│   ├── outputs.tf
+│   ├── azure-pipelines.yml
+│   └── terraform.tfvars
+│
+└── azure-pipelines.yaml (Optional: Parent pipeline to orchestrate all)
+
+
 ### Step 1: Clone the Provided Repositories  
 - For the Spring Boot React application:
 
@@ -500,6 +525,19 @@ resource prometheusMetrics 'Microsoft.Insights/dataCollectionRules@2021-07-01-pr
 
 ``az ad sp create-for-rbac --name "terraform-sp" --role Contributor --scopes /subscriptions/3b22ccd0-4a9a-458a-ba05-4349d7dac8fb
 ``
+
+``
+{
+  "appId": "2fa69971-a672-4511-ad88-e938ba2dc338",  
+  
+  "displayName": "terraform-sp",  
+  
+  "password": "************",  
+  
+  "tenant": "******" 
+}
+``
+
 ## Deploy the Bicep file
 
 ``az deployment group create \
