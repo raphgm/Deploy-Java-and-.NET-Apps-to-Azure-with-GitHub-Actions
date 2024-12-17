@@ -3,7 +3,7 @@ Deploy a Java Spring Boot React app and a .NET app to Azure App Service using Gi
 
 ## Project Structure
 
-``
+```
 project-root/
 │
 ├── frontend/
@@ -24,8 +24,7 @@ project-root/
 │   └── terraform.tfvars
 │
 └── azure-pipelines.yaml (Optional: Parent pipeline to orchestrate all)
-
-``
+```
 
 
 
