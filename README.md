@@ -3,26 +3,44 @@ Deploy a Java Spring Boot React app and a .NET app to Azure App Service using Gi
 
 ## Project Structure
 
-project-root/
+project-root/  
+
 │
-├── frontend/
-│   ├── Dockerfile
-│   ├── azure-pipelines.yml
-│   └── (React Source Code)
+├── frontend/  
+
+│   ├── Dockerfile  
+
+│   ├── azure-pipelines.yml  
+
+│   └── (React Source Code)  
+
+│  
+
+├── backend/  
+
+│   ├── Dockerfile  
+
+│   ├── azure-pipelines.yml  
+
+   
+│   └── (Java Spring Boot Source Code)  
+
 │
-├── backend/
-│   ├── Dockerfile
-│   ├── azure-pipelines.yml
-│   └── (Java Spring Boot Source Code)
+├── infrastructure/  
+
+│   ├── main.tf  
+
+│   ├── variables.tf  
+
+│   ├── outputs.tf  
+
+│   ├── azure-pipelines.yml  
+
+│   └── terraform.tfvars  
+
 │
-├── infrastructure/
-│   ├── main.tf
-│   ├── variables.tf
-│   ├── outputs.tf
-│   ├── azure-pipelines.yml
-│   └── terraform.tfvars
-│
-└── azure-pipelines.yaml (Optional: Parent pipeline to orchestrate all)
+└── azure-pipelines.yaml (Optional: Parent pipeline to orchestrate all)  
+
 
 
 ### Step 1: Clone the Provided Repositories  
