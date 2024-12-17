@@ -152,377 +152,117 @@ project-root/
 
 ### Alternative deployment method for automating all Azure resources in the task with Azure Bicep.
 
-```bicep
-// Parameters
-param location string {
-  default: 'northeurope'
-  allowed: [
-    'eastus'
-    'westeurope'
-    'northeurope'
-  ]
-}
-param environment string = 'dev' // Define environment
-param uniqueSuffix string = uniqueString(resourceGroup().id) // Generate unique suffix based on resource group
-param resourceGroupName string = '${environment}-resource-group'
-param appServicePlanSku string = 'B1'
-param backendAppName string = '${environment}-java-backend-app-${uniqueSuffix}'
-param frontendAppName string = '${environment}-react-frontend-app-${uniqueSuffix}'
-param dotnetAppName string = '${environment}-dotnet-web-app-${uniqueSuffix}'
-param sqlServerName string = '${environment}-sqlserver-${uniqueSuffix}'
-param sqlDatabaseName string = 'appdb'
-param acrName string = '${environment}-acr-${uniqueSuffix}'
-param keyVaultName string = '${environment}-keyvault-${uniqueSuffix}'
-param logAnalyticsWorkspaceName string = '${environment}-app-monitoring-law-${uniqueSuffix}'
-param applicationInsightsName string = '${environment}-app-insights-${uniqueSuffix}'
-param monitoringSolutionName string = 'MonitoringSolution'
-param solutionType string = 'ContainerInsights'
-@secure()
-param sqlAdminPassword string
-@secure()
-param sqlAdminUsername string
-@secure()
-param aadClientId string = 'a57da629-6265-46f2-add3-b61e0181f9bb' // Application (client) ID
-@secure()
-param aadClientSecret string
-param tenantId string = '21cef452-6ccc-4171-9420-b34ecb234499' // Directory (tenant) ID
-
-// Resource Group
-resource resourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
-  name: resourceGroupName
-  location: location
+```
+rovider "azurerm" {
+  features {}
+  client_id       = var.client_id
+  client_secret   = var.client_secret
+  tenant_id       = var.tenant_id
+  subscription_id = var.subscription_id
 }
 
-// Azure Key Vault
-resource keyVault 'Microsoft.KeyVault/vaults@2023-02-01' = {
-  name: keyVaultName
-  location: location
-  properties: {
-    tenantId: tenantId
-    sku: {
-      family: 'A'
-      name: 'standard'
-    }
-    accessPolicies: [
-      {
-        tenantId: tenantId
-        objectId: '3b22ccd0-4a9a-458a-ba05-4349d7dac8fb' // Subscription ID for access
-        permissions: {
-          secrets: [ 'get', 'set' ]
-        }
-      }
-    ]
+# Resource Group
+resource "azurerm_resource_group" "rg" {
+  name     = "my-app-rg"
+  location = "East US"
+}
+
+# Log Analytics Workspace
+resource "azurerm_log_analytics_workspace" "log_workspace" {
+  name                = "my-log-analytics-workspace"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  sku                 = "PerGB2018"
+}
+
+# App Service Plan
+resource "azurerm_service_plan" "app_service_plan" {
+  name                = "my-app-service-plan"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  os_type             = "Linux"
+  sku_name            = "B1"
+}
+
+# Key Vault
+resource "azurerm_key_vault" "kv" {
+  name                = "myAppKeyVault"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  tenant_id           = var.tenant_id
+  sku_name            = "standard"
+}
+
+# Key Vault Secret for Database Password
+resource "azurerm_key_vault_secret" "db_password" {
+  name         = "db-password"
+  value        = var.db_password
+  key_vault_id = azurerm_key_vault.kv.id
+}
+
+# Frontend App Service
+resource "azurerm_linux_web_app" "frontend" {
+  name                = "frontend-app"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  service_plan_id     = azurerm_service_plan.app_service_plan.id
+  identity {
+    type = "SystemAssigned"
   }
-}
-
-// Store SQL credentials in Key Vault
-resource sqlAdminUsernameSecret 'Microsoft.KeyVault/vaults/secrets@2021-06-01-preview' = {
-  name: '${keyVaultName}/sqlAdminUsername'
-  properties: {
-    value: sqlAdminUsername
-  }
-  dependsOn: [
-    keyVault
-  ]
-}
-
-resource sqlAdminPasswordSecret 'Microsoft.KeyVault/vaults/secrets@2021-06-01-preview' = {
-  name: '${keyVaultName}/sqlAdminPassword'
-  properties: {
-    value: sqlAdminPassword
-  }
-  dependsOn: [
-    keyVault
-  ]
-}
-
-// Azure Container Registry
-resource acr 'Microsoft.ContainerRegistry/registries@2023-01-01-preview' = {
-  name: acrName
-  location: location
-  sku: {
-    name: 'Basic'
-  }
-  properties: {
-    adminUserEnabled: true
+  app_settings = {
+    WEBSITES_ENABLE_APP_SERVICE_STORAGE = "false"
+    WEBSITE_RUN_FROM_PACKAGE            = "https://<frontend-package-url>.zip"
+    KEYVAULT_URL                        = azurerm_key_vault.kv.vault_uri
   }
 }
 
-// App Service Plan
-resource appServicePlan 'Microsoft.Web/serverfarms@2022-09-01' = {
-  name: '${environment}-appServicePlan-${uniqueSuffix}'
-  location: location
-  sku: {
-    name: appServicePlanSku
-    tier: 'Basic'
+# Backend App Service
+resource "azurerm_linux_web_app" "backend" {
+  name                = "backend-app"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  service_plan_id     = azurerm_service_plan.app_service_plan.id
+  identity {
+    type = "SystemAssigned"
   }
-  properties: {
-    maximumElasticWorkerCount: 10
-    elasticScaleEnabled: true
-  }
-}
-
-// Auto-scaling rule
-resource autoScale 'Microsoft.Insights/autoscalesettings@2022-06-01' = {
-  name: '${environment}-cpu-memory-autoscale-${uniqueSuffix}'
-  location: location
-  properties: {
-    profiles: [
-      {
-        name: 'ScaleBasedOnCPUAndMemory'
-        capacity: {
-          minimum: '1'
-          maximum: '10'
-          default: '1'
-        }
-        rules: [
-          {
-            metricTrigger: {
-              metricName: 'Percentage CPU'
-              metricResourceUri: appServicePlan.id
-              timeGrain: 'PT1M'
-              statisticalFunction: 'Average'
-              timeWindow: 'PT5M'
-              timeAggregation: 'Average'
-              operator: 'GreaterThan'
-              threshold: 75
-            }
-            scaleAction: {
-              direction: 'Increase'
-              type: 'ChangeCount'
-              value: '1'
-              cooldown: 'PT5M'
-            }
-          }
-          {
-            metricTrigger: {
-              metricName: 'Memory Usage'
-              metricResourceUri: appServicePlan.id
-              timeGrain: 'PT1M'
-              statisticalFunction: 'Average'
-              timeWindow: 'PT5M'
-              timeAggregation: 'Average'
-              operator: 'GreaterThan'
-              threshold: 75
-            }
-            scaleAction: {
-              direction: 'Increase'
-              type: 'ChangeCount'
-              value: '1'
-              cooldown: 'PT5M'
-            }
-          }
-        ]
-      }
-    ]
-    enabled: true
-    notifications: []
+  app_settings = {
+    DATABASE_URL                       = azurerm_mssql_server.sql_server.fully_qualified_domain_name
+    DATABASE_USERNAME                  = azurerm_mssql_server.sql_server.administrator_login
+    DATABASE_PASSWORD                  = azurerm_key_vault_secret.db_password.value
+    WEBSITE_RUN_FROM_PACKAGE           = "https://<backend-package-url>.zip"
   }
 }
 
-// Backend App Service
-resource backendApp 'Microsoft.Web/sites@2022-09-01' = {
-  name: backendAppName
-  location: location
-  identity: {
-    type: 'SystemAssigned'
-  }
-  properties: {
-    serverFarmId: appServicePlan.id
-    siteConfig: {
-      appSettings: [
-        {
-          name: 'DOCKER_REGISTRY_SERVER_URL'
-          value: 'https://${acrName}.azurecr.io'
-        }
-        {
-          name: 'DOCKER_REGISTRY_SERVER_USERNAME'
-          value: acr.properties.adminUserEnabled ? acr.listCredentials().username : ''
-        }
-        {
-          name: 'DOCKER_REGISTRY_SERVER_PASSWORD'
-          value: acr.properties.adminUserEnabled ? acr.listCredentials().passwords[0].value : ''
-        }
-        {
-          name: 'DATABASE_URL'
-          value: 'jdbc:sqlserver://${sqlServerName}.database.windows.net:1433;database=${sqlDatabaseName}'
-        }
-        {
-          name: 'DATABASE_USERNAME'
-          value: '@Microsoft.KeyVault(SecretUri=https://${keyVaultName}.vault.azure.net/secrets/sqlAdminUsername)'
-        }
-        {
-          name: 'DATABASE_PASSWORD'
-          value: '@Microsoft.KeyVault(SecretUri=https://${keyVaultName}.vault.azure.net/secrets/sqlAdminPassword)'
-        }
-      ]
-      linuxFxVersion: 'DOCKER|${acrName}.azurecr.io/backend:latest'
-    }
-  }
+# SQL Server
+resource "azurerm_mssql_server" "sql_server" {
+  name                         = "sql-server-myapp"
+  resource_group_name          = azurerm_resource_group.rg.name
+  location                     = azurerm_resource_group.rg.location
+  version                      = "12.0"
+  administrator_login          = "sqladmin"
+  administrator_login_password = azurerm_key_vault_secret.db_password.value
 }
 
-// Key Vault Access Policy for Backend Managed Identity
-resource keyVaultAccessPolicy 'Microsoft.KeyVault/vaults/accessPolicies@2023-02-01' = {
-  name: '${keyVaultName}/add'
-  properties: {
-    accessPolicies: [
-      {
-        tenantId: tenantId
-        objectId: backendApp.identity.principalId
-        permissions: {
-          secrets: [ 'get', 'list' ]
-        }
-      }
-    ]
-  }
-  dependsOn: [
-    keyVault
-    backendApp
-  ]
+# SQL Database
+resource "azurerm_mssql_database" "sql_database" {
+  name                = "myappdb"
+  server_id           = azurerm_mssql_server.sql_server.id
+  sku_name            = "S1"
+  max_size_gb         = 5
 }
 
-// Frontend App Service
-resource frontendApp 'Microsoft.Web/sites@2022-09-01' = {
-  name: frontendAppName
-  location: location
-  properties: {
-    serverFarmId: appServicePlan.id
-    siteConfig: {
-      appSettings: [
-        {
-          name: 'DOCKER_REGISTRY_SERVER_URL'
-          value: 'https://${acrName}.azurecr.io'
-        }
-        {
-          name: 'DOCKER_REGISTRY_SERVER_USERNAME'
-          value: acr.properties.adminUserEnabled ? acr.listCredentials().username : ''
-        }
-        {
-          name: 'DOCKER_REGISTRY_SERVER_PASSWORD'
-          value: acr.properties.adminUserEnabled ? acr.listCredentials().passwords[0].value : ''
-        }
-      ]
-      linuxFxVersion: 'DOCKER|${acrName}.azurecr.io/frontend:latest'
-    }
-  }
+# Outputs
+output "frontend_url" {
+  value = azurerm_linux_web_app.frontend.default_hostname
 }
 
-// .NET App Service
-resource dotnetApp 'Microsoft.Web/sites@2022-09-01' = {
-  name: dotnetAppName
-  location: location
-  properties: {
-    serverFarmId: appServicePlan.id
-    siteConfig: {
-      appSettings: [
-        {
-          name: 'DOCKER_REGISTRY_SERVER_URL'
-          value: 'https://${acrName}.azurecr.io'
-        }
-        {
-          name: 'DOCKER_REGISTRY_SERVER_USERNAME'
-          value: acr.properties.adminUserEnabled ? acr.listCredentials().username : ''
-        }
-        {
-          name: 'DOCKER_REGISTRY_SERVER_PASSWORD'
-          value: acr.properties.adminUserEnabled ? acr.listCredentials().passwords[0].value : ''
-        }
-      ]
-      linuxFxVersion: 'DOCKER|${acrName}.azurecr.io/dotnet-app:latest'
-    }
-  }
+output "backend_url" {
+  value = azurerm_linux_web_app.backend.default_hostname
 }
 
-// SQL Server
-resource sqlServer 'Microsoft.Sql/servers@2022-02-01-preview' = {
-  name: sqlServerName
-  location: location
-  properties: {
-    administratorLogin: sqlAdminUsername
-    administratorLoginPassword: sqlAdminPassword
-  }
+output "database_connection" {
+  value = "Server=${azurerm_mssql_server.sql_server.fully_qualified_domain_name};Database=${azurerm_mssql_database.sql_database.name};User Id=${azurerm_mssql_server.sql_server.administrator_login};Password=${azurerm_key_vault_secret.db_password.value};"
 }
-
-// SQL Database
-resource sqlDatabase 'Microsoft.Sql/servers/databases@2022-02-01-preview' = {
-  name: sqlDatabaseName
-  parent: sqlServer
-  properties: {
-    edition: 'Basic'
-    maxSizeBytes: 2147483648
-  }
-}
-
-// Firewall Rule for SQL Server
-resource sqlFirewallRule 'Microsoft.Sql/servers/firewallRules@2022-02-01-preview' = {
-  name: 'AllowAzureServices'
-  parent: sqlServer
-  properties: {
-    startIpAddress: '0.0.0.0'
-    endIpAddress: '0.0.0.0'
-  }
-}
-
-// Azure Monitor Log Analytics Workspace
-resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2021-06-01' = {
-  name: logAnalyticsWorkspaceName
-  location: location
-  properties: {
-    sku: {
-      name: 'PerGB2018'
-    }
-  }
-}
-
-// Application Insights
-resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
-  name: applicationInsightsName
-  location: location
-  properties: {
-    Application_Type: 'web'
-    WorkspaceResourceId: logAnalytics.id
-  }
-}
-
-// Managed Grafana
-resource managedGrafana 'Microsoft.Dashboard/grafana@2022-08-01' = {
-  name: '${environment}-ManagedGrafana-${uniqueSuffix}'
-  location: location
-  properties: {
-    zoneRedundant: false
-    publicNetworkAccess: 'Enabled'
-  }
-  identity: {
-    type: 'SystemAssigned'
-  }
-}
-
-// Prometheus Collector in Log Analytics
-resource logAnalyticsPrometheus 'Microsoft.OperationalInsights/workspaces/linkedServices@2021-12-01-preview' = {
-  name: '${environment}-PrometheusCollector-${uniqueSuffix}'
-  parent: logAnalytics
-  properties: {
-    linkedServiceResourceId: logAnalytics.id
-    writeAccessResourceId: ''
-  }
-}
-
-// Prometheus Monitoring Rule
-resource prometheusMetrics 'Microsoft.Insights/dataCollectionRules@2021-07-01-preview' = {
-  name: '${environment}-PrometheusMetricsRule-${uniqueSuffix}'
-  location: location
-  properties: {
-    dataSources: {
-      performanceCounters: []
-      logs: [
-        {
-          name: 'prometheusLogs'
-        }
-      ]
-    }
-  }
-}
-
 ```
 ## Service Principal
 
