@@ -6,12 +6,12 @@ Deploy a Java Spring Boot React app and a .NET app to Azure App Service using Gi
 Two folders were created for the project.   
 
 **Frontend**
-The frontend part of the project includes all the JavaScript, CSS, and HTML files.  
+The frontend part of the project includes all the JavaScript, CSS, and HTML files.   
 
 
-**Backend**
 
-The backend part of the project includes all the Java files and configuration files for the Spring Boot application.   
+**Backend**  The backend part of the project includes all the Java files and configuration files for the Spring Boot application.  
+
 ```
 frontend/
   src/
