@@ -3,27 +3,45 @@ Deploy a Java Spring Boot React app and a .NET app to Azure App Service using Gi
 
 ## Project Structure
 
+Two folders were created for the project. 
+**Frontend**
+The frontend part of the project includes all the JavaScript, CSS, and HTML files.  
+
+
+**Backend**
+
+The backend part of the project includes all the Java files and configuration files for the Spring Boot application.   
 ```
-project-root/
-│
-├── frontend/
-│   ├── Dockerfile
-│   ├── azure-pipelines.yml
-│   └── (React Source Code)
-│
-├── backend/
-│   ├── Dockerfile
-│   ├── azure-pipelines.yml
-│   └── (Java Spring Boot Source Code)
-│
-├── infrastructure/
-│   ├── main.tf
-│   ├── variables.tf
-│   ├── outputs.tf
-│   ├── azure-pipelines.yml
-│   └── terraform.tfvars
-│
-└── azure-pipelines.yaml (Optional: Parent pipeline to orchestrate all)
+frontend/
+  src/
+    main/
+      js/
+        api/
+        app.js
+        client.js
+        follow.js
+        websocket-listener.js
+      resources/
+        static/
+          built/
+          main.css
+          templates/
+  webpack.config.js
+  package.json
+
+backend/
+  src/
+    main/
+      java/
+        com/
+          contoso/
+            payroll/
+      resources/
+        application.properties
+  pom.xml
+  mvnw
+  mvnw.cmd
+  target/
 ```
 
 
